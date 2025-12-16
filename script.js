@@ -67,6 +67,11 @@ map.on('moveend', function(e) {
     console.log(`地图移动结束 minX:${minX.toFixed(2)} minY:${minY.toFixed(2)} maxX:${maxX.toFixed(2)} maxY:${maxY.toFixed(2)}`);
 });
 
+// 缩放级别变动
+map.on('zoomend', function() {
+    console.log("缩放结束，当前级别为:", map.getZoom());
+});
+
 // 设置国家标点
 axios.get('https://da.vtcm.link/map/marker?mapType=1&type=1').then(({data}) => {
     if (data.code === 200) {
@@ -79,8 +84,8 @@ axios.get('https://da.vtcm.link/map/marker?mapType=1&type=1').then(({data}) => {
             </div>
         `,
             className: 'leaflet-clean',
-            iconSize: null, // 重要！设置为 null，让 CSS 决定宽度，否则长文字会被裁切
-            iconAnchor: [0, 0] // 调整锚点，使图标的"尖端"对准坐标点
+            iconSize: null,
+            iconAnchor: [0, 0]
         });
         L.marker([country.axisY, country.axisX], { icon: myCustomIcon }).addTo(map);
         });
