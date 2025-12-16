@@ -65,29 +65,101 @@ map.on('moveend', function(e) {
     let maxX = bounds.getEast();
     let maxY = bounds.getNorth();
     console.log(`地图移动结束 minX:${minX.toFixed(2)} minY:${minY.toFixed(2)} maxX:${maxX.toFixed(2)} maxY:${maxY.toFixed(2)}`);
+    refreshPoint();
 });
 
 // 缩放级别变动
 map.on('zoomend', function() {
-    console.log("缩放结束，当前级别为:", map.getZoom());
+    const currentZoom = map.getZoom();
+    console.log('zoom: ', currentZoom);
+    refreshCountry(currentZoom);
+    refreshCity(currentZoom);
+    refreshPoint();
 });
 
 // 设置国家标点
 axios.get('https://da.vtcm.link/map/marker?mapType=1&type=1').then(({data}) => {
     if (data.code === 200) {
         data.data.forEach(country => {
-        let myCustomIcon = L.divIcon({
-            html: `
-            <div class="country-box">
-                <img class="flag" src="${country.iconUrl}"/>
-                <div class="name">${country.name}</div>
-            </div>
-        `,
-            className: 'leaflet-clean',
-            iconSize: null,
-            iconAnchor: [0, 0]
-        });
-        L.marker([country.axisY, country.axisX], { icon: myCustomIcon }).addTo(map);
+            let myCustomIcon = L.divIcon({
+                html: `
+                    <div class="country-box">
+                        <img class="flag" src="${country.iconUrl}"/>
+                        <div class="name">${country.name}</div>
+                    </div>
+                `,
+                className: 'leaflet-clean',
+                iconSize: null,
+                iconAnchor: [0, 0]
+            });
+            L.marker([country.axisY, country.axisX], { icon: myCustomIcon }).addTo(map);
         });
     }
 });
+
+// 设置城市标点
+axios.get('https://da.vtcm.link/map/marker?mapType=1&type=2').then(({data}) => {
+    if (data.code === 200) {
+        data.data.forEach(country => {
+            let myCustomIcon = L.divIcon({
+                html: `<div class="city-box"><span>${country.name}</span></div>`,
+                className: 'leaflet-clean',
+                iconSize: null,
+                iconAnchor: [0, 0]
+            });
+            L.marker([country.axisY, country.axisX], { icon: myCustomIcon }).addTo(map);
+        });
+    }
+});
+
+const refreshCountry = (zoom) => {
+    if (zoom >= 4) {
+        document.querySelector('#map').style.setProperty('--country-opacity', '0')
+    } else {
+        document.querySelector('#map').style.setProperty('--country-opacity', '1')
+    }
+}
+
+const refreshCity = (zoom) => {
+    if (zoom >= 4) {
+        document.querySelector('#map').style.setProperty('--city-opacity', '1')
+    } else {
+        document.querySelector('#map').style.setProperty('--city-opacity', '0')
+    }
+}
+
+let pointMap = new Map();
+const refreshPoint = _.throttle(() => {
+    const zoom = map.getZoom();
+    if (zoom >= 7.5) {
+        let minX = map.getBounds().getWest();
+        let minY = map.getBounds().getSouth();
+        let maxX = map.getBounds().getEast();
+        let maxY = map.getBounds().getNorth();
+        axios.get(`https://da.vtcm.link/map/marker?mapType=1&type=3&aAxisX=${minX - 500}&aAxisY=${minY - 500}&bAxisX=${maxX + 500}&bAxisX=${maxY + 500}`).then(({data}) => {
+            if (data.code === 200) {
+                data.data.forEach(point => {
+                    console.info(pointMap.get(point.id) !== undefined)
+                    if (point.type !== 3) {
+                        return;
+                    }
+                    let myCustomIcon = L.divIcon({
+                        html: `
+                            <div class="company-box">
+                                <img src="${point.iconUrl}" alt="${point.name}"/>
+                            </div>
+                        `,
+                        className: 'leaflet-clean',
+                        iconSize: null,
+                        iconAnchor: [0, 0]
+                    });
+                    L.marker([point.axisY, point.axisX], { icon: myCustomIcon }).addTo(map);
+                    pointMap.set(point.id, point);
+                });
+            }
+        });
+    } else {
+        pointMap.forEach((val) => {
+        });
+    }
+}, 200)
