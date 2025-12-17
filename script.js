@@ -138,7 +138,9 @@ const refreshPoint = _.throttle(() => {
         let minY = map.getBounds().getSouth();
         let maxX = map.getBounds().getEast();
         let maxY = map.getBounds().getNorth();
-        axios.get(`https://da.vtcm.link/map/marker?mapType=1&aAxisX=${(minX - 200).toFixed(2)}&aAxisY=${(minY - 200).toFixed(2)}&bAxisX=${(maxX + 200).toFixed(2)}&bAxisY=${(maxY + 200).toFixed(2)}`).then(({data}) => {
+        const width = maxX - minX;
+        const height = maxY - minY;
+        axios.get(`https://da.vtcm.link/map/marker?mapType=1&aAxisX=${(minX - width * 0.5).toFixed(2)}&aAxisY=${(minY - height * 0.5).toFixed(2)}&bAxisX=${(maxX + width * 0.5).toFixed(2)}&bAxisY=${(maxY + height * 0.5).toFixed(2)}`).then(({data}) => {
             if (data.code === 200) {
                 data.data.forEach(point => {
                     // 跳过国家、城市和已存在的标点
