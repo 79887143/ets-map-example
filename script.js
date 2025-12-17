@@ -24,6 +24,7 @@ const map = L.map('map', {
     zoom: mapConfig.minZoom,
     maxBounds: bounds,
     maxBoundsViscosity: 0.8,
+    attributionControl: false
 });
 
 // 添加瓦片图层
@@ -55,7 +56,7 @@ L.GridLayer.DebugCoords = L.GridLayer.extend({
         return tile;
     }
 });
-map.addLayer(new L.GridLayer.DebugCoords());
+// map.addLayer(new L.GridLayer.DebugCoords());
 
 // 地图移动结束打印矩形坐标
 map.on('moveend', function(e) {
@@ -131,35 +132,49 @@ const refreshCity = (zoom) => {
 let pointMap = new Map();
 const refreshPoint = _.throttle(() => {
     const zoom = map.getZoom();
-    if (zoom >= 7.5) {
+    if (zoom >= 6) {
+        document.querySelector('#map').style.setProperty('--point-opacity', '0')
         let minX = map.getBounds().getWest();
         let minY = map.getBounds().getSouth();
         let maxX = map.getBounds().getEast();
         let maxY = map.getBounds().getNorth();
-        axios.get(`https://da.vtcm.link/map/marker?mapType=1&type=3&aAxisX=${minX - 500}&aAxisY=${minY - 500}&bAxisX=${maxX + 500}&bAxisX=${maxY + 500}`).then(({data}) => {
+        axios.get(`https://da.vtcm.link/map/marker?mapType=1&aAxisX=${(minX - 200).toFixed(2)}&aAxisY=${(minY - 200).toFixed(2)}&bAxisX=${(maxX + 200).toFixed(2)}&bAxisY=${(maxY + 200).toFixed(2)}`).then(({data}) => {
             if (data.code === 200) {
                 data.data.forEach(point => {
-                    console.info(pointMap.get(point.id) !== undefined)
-                    if (point.type !== 3) {
+                    // 跳过国家、城市和已存在的标点
+                    if (point.type === 1 || point.type === 2 || pointMap.has(point.id)) {
                         return;
                     }
+
+                    let html = '<div class="point-box">';
+                    if (point.type === 3) {
+                        html += `<img class="company" src="${point.iconUrl}" alt="${point.name}"/>`;
+                    } else if ([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99].includes(point.type)) {
+                        html += `<img class="point" src="${point.iconUrl}" alt="point"/>`;
+                    } else {
+                        return;
+                    }
+                    html += `</div>`;
+
                     let myCustomIcon = L.divIcon({
-                        html: `
-                            <div class="company-box">
-                                <img src="${point.iconUrl}" alt="${point.name}"/>
-                            </div>
-                        `,
+                        html,
                         className: 'leaflet-clean',
                         iconSize: null,
                         iconAnchor: [0, 0]
                     });
-                    L.marker([point.axisY, point.axisX], { icon: myCustomIcon }).addTo(map);
-                    pointMap.set(point.id, point);
+                    let marker = L.marker([point.axisY, point.axisX], { icon: myCustomIcon }).addTo(map);
+                    pointMap.set(point.id, marker);
                 });
             }
         });
     } else {
-        pointMap.forEach((val) => {
-        });
+        pointMap.forEach((val) => val.remove());
+        pointMap.clear();
+    }
+    if (zoom >= 7) {
+        document.querySelector('#map').style.setProperty('--point-opacity', '1')
+    } else {
+        document.querySelector('#map').style.setProperty('--point-opacity', '0')
     }
 }, 200)
+refreshPoint();

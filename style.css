@@ -60,16 +60,19 @@ html, body {
     background-color: hsla(0, 0%, 0%, 0.5);
 }
 
-.company-box {
-    border: 1px solid red;
-    width: 200px;
+.point-box {
+    width: 120px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     transform: translate(-50%, -50%);
+    opacity: var(--point-opacity);
+    transition: opacity 0.3s;
 }
-
-.company-box img {
-    height: 20px;
+.point-box .point {
+    height: 22px !important;
+}
+.point-box .company {
+    height: 18px !important;;
 }
